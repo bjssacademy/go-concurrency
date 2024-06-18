@@ -34,9 +34,13 @@ On most systems, time slicing happens unpredictably and non-deterministically, m
 ## Links
 
 https://www.youtube.com/watch?v=olYdb0DdGtM
+
 https://www.youtube.com/watch?v=cdPZ1pJACMI
+
 https://web.mit.edu/6.005/www/fa14/classes/17-concurrency/
+
 https://www.toptal.com/software/introduction-to-concurrent-programming
+
 https://medium.com/swlh/go-a-tale-of-concurrency-a-beginners-guide-b8976b26feb
 
 ---
@@ -55,7 +59,7 @@ Concurrency is about *managing multiple tasks or processes and their interaction
 
 A goroutine is similar to a thread, but it is scheduled by Go, not the OS. Code that runs in a goroutine can run concurrently with other code. Let's look at an example.
 
-![](img/goinaday53.png)
+![](images/goinaday53.png)
 
 There are a few interesting things going on here, but the most important is how we start a goroutine. We simply use the go keyword followed by the function we want to execute. If we just want to run a bit of code, such as the above, we can use an anonymous function. Do note that anonymous functions aren't only used with goroutines, however.
 
@@ -80,7 +84,7 @@ Channels help make concurrent programming saner by taking shared data out of the
 
 The final thing to know before we move on is that receiving and sending to and from a channel is **blocking**. That is, when we receive from a channel, execution of the goroutine won't continue until data is available. Similarly, when we send to a channel, execution won't continue until the data is received.
 
-![](img/goinaday54.png)
+![](images/goinaday54.png)
 
 ---
 
