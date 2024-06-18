@@ -2,6 +2,45 @@
 
 Warning - here be dragons. If you're new to programming this next section may blow your mind.
 
+Concurrency means multiple computations are happening at the same time. Concurrency is everywhere in modern programming, whether we like it or not:​
+
+- Multiple computers in a network​
+
+- Multiple applications running on one computer​
+
+- Multiple processors in a computer (today, often multiple processor cores on a single chip)​
+
+
+In fact, concurrency is essential in modern programming:​
+
+- Web sites must handle multiple simultaneous users.​
+
+- Mobile apps need to do some of their processing on servers (“in the cloud”).​
+
+- Graphical user interfaces almost always require background work that does not interrupt the user. For example, Eclipse compiles your Java code while you’re still editing it.
+
+---
+
+## Time Slicing
+
+How can I have many concurrent threads with only one or two processors in my computer? When there are more threads than processors, concurrency is simulated by *time slicing*, which means that the processor switches between threads. ​
+
+![alt text](images/ts.png)
+
+The figure above shows how three threads T1, T2, and T3 might be time-sliced on a machine that has only two actual processors. In the figure, time proceeds downward, so at first one processor is running thread T1 and the other is running thread T2, and then the second processor switches to run thread T3. Thread T2 simply pauses, until its next time slice on the same processor or another processor.​
+
+On most systems, time slicing happens unpredictably and non-deterministically, meaning that a thread may be paused or resumed at any time.​
+
+## Links
+
+https://www.youtube.com/watch?v=olYdb0DdGtM
+https://www.youtube.com/watch?v=cdPZ1pJACMI
+https://web.mit.edu/6.005/www/fa14/classes/17-concurrency/
+https://www.toptal.com/software/introduction-to-concurrent-programming
+https://medium.com/swlh/go-a-tale-of-concurrency-a-beginners-guide-b8976b26feb
+
+---
+
 ## Concurrency in Go
 
 Okay, so if you've got this far we're now getting into some of the very cool and confusing things Go does - concurrency.
@@ -122,3 +161,170 @@ Result: 10
 ---
 
 ## The Actor Model
+
+## What is concurrency?
+
+1. "Doing work in parallel"
+2. Imagine a Starbucks
+    - Three baristas
+    - different coffee each
+Get three times as many coffees out
+
+![alt text](images/con1.PNG)
+
+### Sounds simple...
+
+But imagine there's only *one* machine. So now we have:
+
+- all 3 using the same machine
+- at the same time
+
+Everything gets mixed up!
+
+![alt text](images/con2.PNG)
+
+Oh dear. We have just invented the
+Choca
+Wocka
+Mocha
+Tea
+Orange
+BananaSplit with frothy milk
+
+### Broken Example
+
+Concurrency fails when we:
+
+1. Mutate shared state
+2. Shared across goroutines
+
+Let's take a look at some code:
+
+[Go Playground Link](https://goplay.tools/snippet/IlLDVFZnzhk)
+
+```go
+// Protected Data resource - not concurrent safe
+var coffeeOrder = []byte("               ")
+
+func main() {
+
+	go writeText("Choca          ")
+	go writeText("Mocha with Milk")
+	go writeText("Banana Shake   ")
+	go writeText("Tea no sugar   ")
+
+	// What on earth will be in coffeeOrder now?
+	time.Sleep(1 * time.Second)
+
+	fmt.Println(string(coffeeOrder))
+}
+
+func writeText(newOrder string) {
+
+	// CRITICAL SECTION STARTS
+	orderAsBytes := []byte(newOrder)
+	for index, b := range orderAsBytes {
+		coffeeOrder[index] = b
+		time.Sleep(10 * time.Millisecond)
+	}
+	// CRITICAL SECTION ENDS
+}
+```
+
+In our logical ordered brains, these lines:
+
+```go
+    go writeText("Choca          ")
+	go writeText("Mocha with Milk")
+	go writeText("Banana Shake   ")
+	go writeText("Tea no sugar   ")
+```
+
+..should execute in order. The first one will work on Choca and then move on to the second one, right? 
+
+Run it a few times. The data you get will be corrupted and unpredictable, like:
+
+![alt text](images/image.png)
+
+This is what we mean about concurrency in general - it can be very hard to understand and ensure things like this don't happen due to the nature of time slicing and multiple cores and threads on a PC.
+
+### Mutexes (or Locks)
+
+Mutexes are a way to ensure the function works syncronously - that is, it doesn't let anythign else in until it's finished with what it has. We often use the example of a toilet:
+
+![alt text](images/mut1.PNG)
+
+Wait your turn!
+
+If unlocked
+- Enter the ‘protected area’
+- Lock the door
+- Do the thing
+- Unlock the door
+- Leave
+
+If locked
+- Wait your turn until it is unlocked
+
+#### Mutexes in code
+
+[Go Playground with mutexes](https://goplay.tools/snippet/NT7Gp8HMFOw)
+
+```go
+var coffeeOrder = []byte("               ")
+var mutex sync.Mutex //new import of "sync" package
+
+func main() {
+
+	//same as before
+}
+
+func writeText(newOrder string) {
+	// WAIT until the lock is free
+	mutex.Lock()
+
+	// DON'T FORGET to unlock the lock at the end!
+	defer mutex.Unlock()
+
+	// CRITICAL SECTION STARTS
+	orderAsBytes := []byte(newOrder)
+	for index, b := range orderAsBytes {
+		coffeeOrder[index] = b
+		time.Sleep(10 * time.Millisecond)
+	}
+	// CRITICAL SECTION ENDS
+}
+```
+
+We have only added a couple of things:
+
+`mutex.Lock()`
+- Wait in line to be unlocked
+- Lock
+
+Run ‘Critical Section’ Code
+- The code that needs making safe
+
+`mutex.Unlock()`
+- Open the lock for others
+
+### Without using Mutexes
+
+It's the idiomatic Go solution using Goroutines and Channels rather than using Mutexes!
+
+> “Don’t communicate by sharing – share by communicating”
+
+#### What doe the Actor Model do?
+
+Encapsulates concurrency management
+
+- Requests are asynchronous
+- Requests placed on a channel
+- Single goroutine reads requests from channel
+- Handles requests one at a time
+
+Many goroutines can add a request to the channel
+
+The Actor *guarantees* only one will access the protected resource
+
+![alt text](images/am1.PNG)
